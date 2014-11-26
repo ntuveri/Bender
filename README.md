@@ -1,4 +1,4 @@
 Bender
 ======
 
-Simple ASP .NET Web Controls - PONO mapping tool
+Simple ASP .NET Web Controls - POCO mapping tool
