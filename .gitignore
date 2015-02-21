@@ -41,3 +41,10 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+/Bender/bin/Debug
+/Bender/obj/Debug
+/Bender.Test/obj/Debug
+/Bender.Web/Bin
+/Bender.6.0.ReSharper.user
+/Bender.suo
+/Bender.v11.suo
