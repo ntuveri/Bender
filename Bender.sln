@@ -1,14 +1,14 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bender", "Bender\Bender.csproj", "{78CCF880-45DB-41EC-B380-2FAC015BC723}"
 EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Bender.Web", "Bender.Web\", "{612FD339-D6C1-45C3-8BED-4575D2C24341}"
 	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = "Svn"
-		SccAuxPath = "Svn"
-		SccLocalPath = "Svn"
-		SccProvider = "SubversionScc"
+		SccProjectName = ""
+		SccAuxPath = ""
+		SccLocalPath = ""
+		SccProvider = ""
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv3.5"
 		ProjectReferences = "{78CCF880-45DB-41EC-B380-2FAC015BC723}|Bender.dll;"
 		Debug.AspNetCompiler.VirtualPath = "/Bender.Web"
@@ -29,19 +29,10 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Bender.Web", "Bender.Web\",
 		DefaultWebSiteLanguage = "Visual C#"
 		StartServerOnDebug = "false"
 	EndProjectSection
-	ProjectSection(SvnOrigin) = preProject
-		@Keys = Enlist,Svn.Uri
-		Enlist = Required
-		Svn.Uri = Bender.Web/
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bender.Test", "Bender.Test\Bender.Test.csproj", "{AB838395-BD65-4CCE-9C8B-B5D3F4FD85A9}"
 EndProject
 Global
-	GlobalSection(SubversionScc) = preSolution
-		Svn-Managed = True
-		Manager = AnkhSVN - Subversion Support for Visual Studio
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
