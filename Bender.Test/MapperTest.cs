@@ -62,7 +62,8 @@ namespace Bender.Test
 
             public Repeater Repeater { get; set; }
             public CheckBoxList CheckBoxList { get; set; }
-
+            public RadioButtonList RadioButtonList { get; set; }
+            
             public Page1()
             {
 
@@ -105,6 +106,12 @@ namespace Bender.Test
                 Repeater.AlternatingItemTemplate = new Template3();
                 
                 CheckBoxList = new CheckBoxList() { ID = "CheckBoxList" };
+
+                RadioButtonList = new RadioButtonList() { ID = "RadioButtonList" };
+                RadioButtonList.Items.Add(new ListItem("", ""));
+                RadioButtonList.Items.Add(new ListItem("Si", "true"));
+                RadioButtonList.Items[1].Selected = true;
+                RadioButtonList.Items.Add(new ListItem("No", "false"));
                 
                 Controls.Add(TextBox);
                 Controls.Add(HiddenField);
@@ -118,6 +125,7 @@ namespace Bender.Test
                 Controls.Add(Panel);
                 Controls.Add(Repeater);
                 Controls.Add(CheckBoxList);
+                Controls.Add(RadioButtonList);
             }
 
             public void Setup()
@@ -201,6 +209,7 @@ namespace Bender.Test
                 CheckBoxList.Items[1].Selected = true;
                 CheckBoxList.Items[2].Selected = true;
                 CheckBoxList.DataSource = null;
+             
             }
         }
 
@@ -227,8 +236,10 @@ namespace Bender.Test
             public List<G>[] Repeater { get; set; }
 
             public D[] CheckBoxList { get; set; } 
-            public List<int> CheckBoxListSelected { get; set; } 
+            public List<int> CheckBoxListSelected { get; set; }
 
+            public bool? RadioButtonList {  get; set; } 
+            
             public void Setup() 
             {
                 TextBox = new DateTime(2013, 3, 3);
@@ -275,6 +286,8 @@ namespace Bender.Test
                 };
 
                 CheckBoxListSelected = new List<int> { 66, 88, 99 };
+
+                RadioButtonList = false;
             }
         }
 
@@ -382,6 +395,8 @@ namespace Bender.Test
             Assert.AreEqual(2, a.CheckBoxListSelected.Count);
             Assert.AreEqual(88, a.CheckBoxListSelected[0]);
             Assert.AreEqual(99, a.CheckBoxListSelected[1]);
+
+            Assert.AreEqual(true, a.RadioButtonList);
         }
 
         [Test]
@@ -457,6 +472,8 @@ namespace Bender.Test
             Assert.IsFalse(p1.CheckBoxList.Items.FindByValue("77").Selected);
             Assert.IsTrue(p1.CheckBoxList.Items.FindByValue("88").Selected);
             Assert.IsTrue(p1.CheckBoxList.Items.FindByValue("99").Selected);
+
+            Assert.AreEqual("false", p1.RadioButtonList.SelectedValue);
         }
 
         struct Geo 

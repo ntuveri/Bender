@@ -190,7 +190,11 @@ namespace Bender
 
         public MappingItem FindMappingItem(IEnumerable<MappingItem> items, MappingItem keyItem)
         {
-            return items.FirstOrDefault(i => MatchMappingItemKey(i.Key, keyItem.Key));
+            return items.Where(i => 
+                MatchMappingItemKey(i.Key, keyItem.Key)).
+                OrderByDescending(i => i.GetType() == keyItem.GetType()).
+                ThenByDescending(i => i.Key == keyItem.Key).
+                FirstOrDefault();
         }
 
         public IList<MappingItem> FindChildMappingItems(IEnumerable<MappingItem> items, MappingItem keyItem)

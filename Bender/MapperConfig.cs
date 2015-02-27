@@ -14,7 +14,6 @@ namespace Bender
         public MapperConfig()
         {
             TypeConverters = new List<ITypeConverter>();
-            // TypeConverters.Add(new WebControlsTypeConverter());
             TypeConverters.Add(new NativeTypeConverter());
             
             MappingItemProviders = new List<IMappingItemProvider>();
@@ -24,7 +23,9 @@ namespace Bender
             DefaultKeyFilter = new CompositeFilter(
                 new IKeyFilter[] {
                     new IdentityFilter(), 
-                    new PrefixPostfixFilter(new string[] { "lbl", "txt", "hdn", "grd", "pnl", "rpt", "rbl", "cbl", "drp", "ddl", "cb", "rb" }, null),
+                    new PrefixPostfixFilter(
+                        new string[] { "lbl", "txt", "hdn", "grd", "pnl", "rpt", "rbl", "cbl", "drp", "ddl", "cb", "rb" }, 
+                        new string[] { "Selected" } ),
                     new DotFilter()
                 });
         }

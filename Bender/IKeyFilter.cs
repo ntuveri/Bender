@@ -61,7 +61,7 @@ namespace Bender
                 {
                     if(parts[i].EndsWith(postfix))
                     {   
-                        parts[i].Remove(parts[i].Length - postfix.Length - 1, postfix.Length);
+                        parts[i] = parts[i].Remove(parts[i].Length - postfix.Length, postfix.Length);
                         break;
                     }
                 }

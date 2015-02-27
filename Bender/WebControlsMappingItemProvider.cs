@@ -261,7 +261,7 @@ namespace Bender
                 Getter = c => ((ListItemControlSelected) c).ListItem.Value, 
                 Setter = (c, v) => {
                     var li = ((ListItemControlSelected) c).ListItem;
-                    li.Selected = li.Value == (string) v;
+                    li.Selected = string.Equals(li.Value, (string) v, StringComparison.InvariantCultureIgnoreCase);
                 }
             }
         };
