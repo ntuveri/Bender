@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Bender
 {
@@ -35,6 +36,8 @@ namespace Bender
         private string[] Prefixes { get; set; }
         private string[] Postfixes { get; set; }
 
+        private const string BracketsRegex = @"^\w+(\[\d+\])$"; 
+
         public PrefixPostfixFilter(string[] prefixes, string[] postfixes)
         {
             Prefixes = prefixes ?? new string[] {};
@@ -59,9 +62,15 @@ namespace Bender
                 
                 foreach (string postfix in Postfixes)
                 {
-                    if(parts[i].EndsWith(postfix))
+                    Match match = Regex.Match(parts[i], BracketsRegex);
+                    string brackets = "";
+                    if(match.Success)
+                    {
+                        brackets = match.Groups[1].Value;
+                    }
+                    if(parts[i].EndsWith(postfix + brackets))
                     {   
-                        parts[i] = parts[i].Remove(parts[i].Length - postfix.Length, postfix.Length);
+                        parts[i] = parts[i].Remove(parts[i].Length - postfix.Length - brackets.Length, postfix.Length);
                         break;
                     }
                 }

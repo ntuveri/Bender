@@ -63,6 +63,7 @@ namespace Bender.Test
             public Repeater Repeater { get; set; }
             public CheckBoxList CheckBoxList { get; set; }
             public RadioButtonList RadioButtonList { get; set; }
+            public ListBox ListBox2 { get; set; }
             
             public Page1()
             {
@@ -110,8 +111,13 @@ namespace Bender.Test
                 RadioButtonList = new RadioButtonList() { ID = "RadioButtonList" };
                 RadioButtonList.Items.Add(new ListItem("", ""));
                 RadioButtonList.Items.Add(new ListItem("Si", "true"));
-                RadioButtonList.Items[1].Selected = true;
                 RadioButtonList.Items.Add(new ListItem("No", "false"));
+                
+                ListBox2 = new ListBox() { ID = "ListBox2" };
+                ListBox2.SelectionMode = ListSelectionMode.Multiple;
+                ListBox2.Items.Add(new ListItem("Red", "1"));
+                ListBox2.Items.Add(new ListItem("Blue", "2"));
+                ListBox2.Items.Add(new ListItem("Green", "3"));
                 
                 Controls.Add(TextBox);
                 Controls.Add(HiddenField);
@@ -126,6 +132,7 @@ namespace Bender.Test
                 Controls.Add(Repeater);
                 Controls.Add(CheckBoxList);
                 Controls.Add(RadioButtonList);
+                Controls.Add(ListBox2);
             }
 
             public void Setup()
@@ -209,7 +216,11 @@ namespace Bender.Test
                 CheckBoxList.Items[1].Selected = true;
                 CheckBoxList.Items[2].Selected = true;
                 CheckBoxList.DataSource = null;
-             
+
+                RadioButtonList.Items[1].Selected = true;
+
+                ListBox2.Items[1].Selected = true;
+                ListBox2.Items[2].Selected = true;
             }
         }
 
@@ -240,6 +251,8 @@ namespace Bender.Test
 
             public bool? RadioButtonList {  get; set; } 
             
+            public int[] ListBox2 { get; set; }
+
             public void Setup() 
             {
                 TextBox = new DateTime(2013, 3, 3);
@@ -288,6 +301,8 @@ namespace Bender.Test
                 CheckBoxListSelected = new List<int> { 66, 88, 99 };
 
                 RadioButtonList = false;
+
+                ListBox2 = new int[] { 1, 3 };
             }
         }
 
@@ -397,6 +412,10 @@ namespace Bender.Test
             Assert.AreEqual(99, a.CheckBoxListSelected[1]);
 
             Assert.AreEqual(true, a.RadioButtonList);
+
+            Assert.AreEqual(2, a.ListBox2.Length);
+            Assert.AreEqual(2, a.ListBox2[0]);
+            Assert.AreEqual(3, a.ListBox2[1]);
         }
 
         [Test]
@@ -474,6 +493,9 @@ namespace Bender.Test
             Assert.IsTrue(p1.CheckBoxList.Items.FindByValue("99").Selected);
 
             Assert.AreEqual("false", p1.RadioButtonList.SelectedValue);
+            
+            Assert.IsTrue(p1.ListBox2.Items.FindByValue("1").Selected);
+            Assert.IsTrue(p1.ListBox2.Items.FindByValue("3").Selected);
         }
 
         struct Geo 

@@ -188,25 +188,40 @@ namespace Bender
             item.Provider.InitMappingItem(Context, item);
         }
 
-        public MappingItem FindMappingItem(IEnumerable<MappingItem> items, MappingItem keyItem)
+        public bool MatchMappingItemType(MappingItem sourceItem, MappingItem targetItem)
+        {
+            EnumerableMappingItem enumSourceItem = sourceItem as EnumerableMappingItem;
+            EnumerableMappingItem enumTargetItem = targetItem as EnumerableMappingItem;
+            if(enumSourceItem != null && enumTargetItem != null)
+            {
+                return enumTargetItem.ElementType.IsAssignableFrom(enumSourceItem.ElementType) || 
+                    Config.FindTypeConverter(enumSourceItem.ElementType, enumTargetItem.ElementType) != null;
+            }
+
+            return targetItem.Type.IsAssignableFrom(sourceItem.Type) || 
+                    Config.FindTypeConverter(sourceItem.Type, targetItem.Type) != null;
+        }
+
+        public MappingItem FindMappingItem(IEnumerable<MappingItem> items, MappingItem targetItem)
         {
             return items.Where(i => 
-                MatchMappingItemKey(i.Key, keyItem.Key)).
-                OrderByDescending(i => i.GetType() == keyItem.GetType()).
-                ThenByDescending(i => i.Key == keyItem.Key).
+                MatchMappingItemKey(i.Key, targetItem.Key)).
+                OrderByDescending(i => i.GetType() == targetItem.GetType()).
+                ThenByDescending(i => MatchMappingItemType(i, targetItem)).
+                ThenByDescending(i => i.Key == targetItem.Key).
                 FirstOrDefault();
         }
 
-        public IList<MappingItem> FindChildMappingItems(IEnumerable<MappingItem> items, MappingItem keyItem)
+        public IList<MappingItem> FindChildMappingItems(IEnumerable<MappingItem> items, MappingItem targetItem)
         {
-            return items.Where(i => keyItem.Children.Any(
-                ki => MatchMappingItemKey(i.Key, ki.Key))).ToList();
+            return items.Where(i => targetItem.Children.Any(
+                ti => MatchMappingItemKey(i.Key, ti.Key))).ToList();
         }
 
-        public IList<MappingItem> FindDescendantMappingItems(IEnumerable<MappingItem> items, MappingItem keyItem)
+        public IList<MappingItem> FindDescendantMappingItems(IEnumerable<MappingItem> items, MappingItem targetItem)
         {
-            return FindChildMappingItems(items, keyItem).Concat(
-                keyItem.Children.SelectMany(ki => FindChildMappingItems(items, ki))).ToList();
+            return FindChildMappingItems(items, targetItem).Concat(
+                targetItem.Children.SelectMany(ti => FindChildMappingItems(items, ti))).ToList();
         }
        
         private bool MatchMappingItemKey(string sourceKey, string targetKey)

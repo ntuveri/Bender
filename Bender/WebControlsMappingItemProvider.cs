@@ -6,6 +6,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Reflection;
 using System.Diagnostics;
+using System.Collections;
 
 namespace Bender
 {
@@ -58,7 +59,7 @@ namespace Bender
                  yield return new EnumerableMappingItem() {
                     Parent = parentMappingItem,
                     Value = Getter(control),
-                    Type = typeof(object),
+                    Type = typeof(IEnumerable),
                     ElementType = typeof(object),
                     Provider = provider,
                     Name = control.ID,
@@ -88,14 +89,21 @@ namespace Bender
             public ListControlWebControlAdapter()
             {
                 ControlType = typeof(ListControl);
-                Getter = ctrl => ((ListControl) ctrl).DataSource;
+                Getter = ctrl => {
+                    var lc = (ListControl) ctrl;
+                    return lc.DataSource ?? (lc.Items.Count > 0 ? new object[lc.Items.Count] : null);
+                };
                 Setter = (ctrl, val, ctx) => {
                     ListControl listControl = (ListControl) ctrl;
-                    listControl.DataSource = val;
-                    listControl.DataBind();
-                    
+                    if(listControl.DataSource == null && listControl.Items.Count == 0)
+                    {
+                        listControl.DataSource = val;
+                        listControl.DataBind();
+                    }                    
                     var selectedMappingItems = ctx.SourceMappingItems.
-                        Where(smi => smi.Key == ctx.CurrentSourceMappingItem.Key + "Selected");
+                        Where(smi => 
+                            smi.Key == ctx.CurrentSourceMappingItem.Key ||
+                            smi.Key == ctx.CurrentSourceMappingItem.Key + "Selected");
                     var selectedValues = selectedMappingItems.OfType<ValueMappingItem>().Concat(selectedMappingItems.
                         OfType<EnumerableMappingItem>().SelectMany(smi => smi.Children).OfType<ValueMappingItem>()).
                         Select(smi => smi.Value.ToString());
@@ -122,8 +130,8 @@ namespace Bender
                     enumItem = new EnumerableMappingItem() {
                         Parent = parentMappingItem,
                         Value = !isSelected ? Getter(control) : new object[listItems.Count()],
-                        Type = typeof(object),
-                        ElementType = typeof(object),
+                        Type = typeof(IEnumerable),
+                        ElementType = isSelected ? typeof(string) : typeof(object),
                         Provider = provider,
                         Name = control.ID + (isSelected ? "Selected" : null),
                         Source = !isSelected ? control : null,
@@ -270,19 +278,33 @@ namespace Bender
         {
             new EnumerableWebControlAdapter() { 
                 ControlType = typeof(GridView), 
-                Getter = ctrl => ((GridView) ctrl).DataSource,
-                Setter = (ctrl, val, ctx) => { 
-                    ((GridView) ctrl).DataSource = val;
-                    ((GridView) ctrl).DataBind();
+                Getter = ctrl => {
+                    var gv = (GridView) ctrl;
+                    return gv.DataSource ?? (gv.Rows.Count > 0 ? new object[gv.Rows.Count] : null);  
+                },
+                Setter = (ctrl, val, ctx) => {
+                    var gv = (GridView) ctrl;
+                    if(gv.DataSource == null && gv.Rows.Count == 0)
+                    {
+                        gv.DataSource = val;
+                        gv.DataBind();
+                    }
                 }
             },
             new ListControlWebControlAdapter(),
             new EnumerableWebControlAdapter() { 
                 ControlType = typeof(Repeater), 
-                Getter = ctrl => ((Repeater) ctrl).DataSource,
+                Getter = ctrl => {
+                    var r = (Repeater) ctrl;
+                    return r.DataSource ?? (r.Items.Count > 0 ? new object[r.Items.Count] : null);  
+                },
                 Setter = (ctrl, val, ctx) => { 
-                    ((Repeater) ctrl).DataSource = val;
-                    ((Repeater) ctrl).DataBind();
+                    var r = (Repeater) ctrl;
+                    if(r.DataSource == null && r.Items.Count == 0)
+                    {
+                        r.DataSource = val;
+                        r.DataBind();
+                    }
                 }
             },
         };
@@ -372,22 +394,25 @@ namespace Bender
             if(enumControl != null) 
             {
                 var control = (Control) enumItem.Source;
-
+                var initialValue = enumControl.Getter(control);
                 enumControl.Setter(control, value, context);
-
-                var subMappingItems = GetMappingItems(control, control.GetType()).ToList();
-                foreach (var smi in subMappingItems)
-                {
-                    if(smi.Parent == null) 
+                
+                if(initialValue == null)
+                {   
+                    var subMappingItems = GetMappingItems(control, control.GetType()).ToList();
+                    foreach (var smi in subMappingItems)
                     {
-                        foreach (var smic in smi.Children.ToList())
+                        if(smi.Parent == null) 
                         {
-                            smic.Parent = enumItem;
+                            foreach (var smic in smi.Children.ToList())
+                            {
+                                smic.Parent = enumItem;
+                            }
+                        }  
+                        else
+                        {
+                            context.TargetMappingItems.Add(smi);
                         }
-                    }  
-                    else
-                    {
-                        context.TargetMappingItems.Add(smi);
                     }
                 }
             }
