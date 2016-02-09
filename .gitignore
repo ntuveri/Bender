@@ -43,7 +43,12 @@ Temporary Items
 .apdisk
 /Bender/bin/Debug
 /Bender/obj/Debug
+/Bender/bin/Release
+/Bender/obj/Release
 /Bender.Test/obj/Debug
+/Bender.Test/bin/Debug
+/Bender.Test/obj/Release
+/Bender.Test/bin/Release
 /Bender.Web/Bin
 /Bender.6.0.ReSharper.user
 /Bender.suo
