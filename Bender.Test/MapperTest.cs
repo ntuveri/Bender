@@ -495,6 +495,7 @@ namespace Bender.Test
             Assert.AreEqual("false", p1.RadioButtonList.SelectedValue);
             
             Assert.IsTrue(p1.ListBox2.Items.FindByValue("1").Selected);
+            Assert.IsFalse(p1.ListBox2.Items.FindByValue("2").Selected);
             Assert.IsTrue(p1.ListBox2.Items.FindByValue("3").Selected);
         }
 

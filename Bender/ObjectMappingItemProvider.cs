@@ -237,6 +237,7 @@ namespace Bender
                 yield return containerMappingItem;
 
                 var props = itemType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                
                 for (int i = 0; i < props.Length; i++)
                 {
                     var prop = props[i];
@@ -287,7 +288,10 @@ namespace Bender
                     }
                 };
             }
-            PropertyInfo propInfo = parentItem.Type.GetProperty(item.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance); 
+
+            PropertyInfo propInfo = parentItem.Type.
+                    GetProperty(item.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance); 
+
             return (val) => {
                 if(parentItem.Value != null && propInfo != null) 
                 { 
@@ -302,7 +306,7 @@ namespace Bender
             MethodInfo methodInfo = 
                 parentItem.Type.GetMethod("SetValue", new Type[] { parentItem.ElementType, typeof(int) }) ?? // array
                 parentItem.Type.GetMethod("set_Item", new Type[] { typeof(int), parentItem.ElementType }); // list
-            
+
             return (val) => {
                 if(parentItem.Value != null && methodInfo != null) 
                 { 
