@@ -20,8 +20,8 @@ namespace Bender
             var typeConverterTarget = TypeDescriptor.GetConverter(targetType);
             var typeConverterSource = TypeDescriptor.GetConverter(sourceType);
             
-            return (typeConverterTarget != null && typeConverterTarget.CanConvertFrom(sourceType) || 
-                typeConverterSource != null && typeConverterSource.CanConvertTo(targetType));
+            return (typeConverterTarget != null && typeConverterTarget.CanConvertFrom(sourceType)) || 
+                (typeConverterSource != null && typeConverterSource.CanConvertTo(targetType));
         }
 
         public object Convert(object source, Type targetType)
