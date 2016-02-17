@@ -107,6 +107,34 @@ namespace Bender
             }
         }
 
+        private void InitDictionaryMappingItem(MappingContext context, ContainerMappingItem dictionaryItem, IEnumerable<MappingItem> sourceMappingItemChildren, IDictionary dict)
+        {
+            var valueType = GetDictionaryValueType(dictionaryItem.Type);
+            foreach (var mic in sourceMappingItemChildren)
+            {
+                var key = mic.Key;
+                var itemType = valueType;
+                // use the source type if known and is assignable to the dictionary value type
+                if(mic.Type != null || mic.Value != null)
+                {
+                    var miType = mic.Type ?? mic.Value.GetType();
+                    if(valueType.IsAssignableFrom(miType))
+                    {
+                        itemType = miType;
+                    }
+                }
+                dict[key] = itemType.IsValueType ? Activator.CreateInstance(itemType) : null;
+                InitDictionaryMappingItem(context, dictionaryItem, mic.Children, dict);
+
+                var subMappingItems = GetMappingItems(dict[key], itemType, dictionaryItem);
+                foreach (var smi in subMappingItems)
+                {  
+                    if(smi.Parent == dictionaryItem) { smi.Name = (string) key; }
+                    context.TargetMappingItems.Add(smi);
+                }
+            }
+        }
+
         public void InitMappingItem(MappingContext context, ContainerMappingItem containerItem)
         {
             if(containerItem.Value == null)
@@ -115,17 +143,7 @@ namespace Bender
                 if(IsDictionaryType(containerItem.Type))
                 {
                     var dict = containerValue as IDictionary;
-                    foreach (var key in context.CurrentSourceMappingItem.Children.Select(si => si.Name))
-                    {
-                        var valueType = GetDictionaryValueType(containerItem.Type);
-                        dict[key] = valueType.IsValueType ? Activator.CreateInstance(valueType) : null;
-                        var subMappingItems = GetMappingItems(dict[key], valueType, containerItem);
-                        foreach (var smi in subMappingItems)
-                        {  
-                            if(smi.Parent == containerItem) { smi.Name = (string) key; }
-                            context.TargetMappingItems.Add(smi);
-                        }
-                    }
+                    InitDictionaryMappingItem(context, containerItem, context.CurrentSourceMappingItem.Children, dict);
                 }
                 containerItem.Value = containerValue;
             }

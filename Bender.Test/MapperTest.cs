@@ -335,6 +335,8 @@ namespace Bender.Test
         {
             public string Numero { get; set; }
             public string Numero2 { get; set; }
+            public D D { get; set; }
+            public D D2 { get; set; }
         }
 
         public class G
@@ -419,21 +421,35 @@ namespace Bender.Test
         }
 
         [Test]
-        public void MapDictionaryToObject() 
+        public void MapDictionaryToObjectTest() 
         {
             var dict = new Dictionary<string, object>() { 
-                { "Numero", "Uno" }, { "Numero2", "Due" }
+                { "Numero", "Uno" }, { "Numero2", "Due" }, 
+                { "D", new D() { Id = 3 } },
+                { "D2.Id", 4 },
             };
             Mapper m = new Mapper();
             var f = m.Map<F>(dict, dict.GetType());
 
             Assert.AreEqual("Uno", f.Numero);
             Assert.AreEqual("Due", f.Numero2);
+            Assert.AreEqual(3, f.D.Id);
+            Assert.AreEqual(4, f.D2.Id);
 
-            var dict2 = m.Map<Dictionary<string, string>>(f, typeof(F));
+            var dict2 = m.Map<Dictionary<string, object>>(f, typeof(F));
 
             Assert.AreEqual("Uno", dict2["Numero"]);
             Assert.AreEqual("Due", dict2["Numero2"]);
+            Assert.AreEqual(f.D, (D) dict2["D"]);
+            Assert.AreEqual(f.D2.Id, dict2["D2.Id"]);
+
+            
+            var dict3 = m.Map<Dictionary<string, string>>(f, typeof(F));
+
+            Assert.AreEqual("Uno", dict3["Numero"]);
+            Assert.AreEqual("Due", dict3["Numero2"]);
+            Assert.AreEqual("3", dict3["D.Id"]);
+            Assert.AreEqual("4", dict3["D2.Id"]);
         }
 
         [Test]
@@ -565,6 +581,14 @@ namespace Bender.Test
 
         }
 
+        class H 
+        {
+            public override string ToString()
+            {
+                return "I'm an instance of type H";
+            }
+        }
+
         [Test]
         public void NativeTypeConverterTest()
         {
@@ -578,6 +602,11 @@ namespace Bender.Test
 
             Assert.AreEqual(typeof(int), intValue.GetType());
             Assert.AreEqual((int) 2.0, intValue);
+
+            var stringValue = converter.Convert(new H(), typeof(string));
+
+            Assert.AreEqual(typeof(string), stringValue.GetType());
+            Assert.AreEqual("I'm an instance of type H", stringValue);
         }
 
         public class ClassIInt
