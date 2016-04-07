@@ -339,6 +339,11 @@ namespace Bender.Test
             public D D2 { get; set; }
         }
 
+        class F2 
+        {
+            public F F { get; set; }
+        }
+
         public class G
         {
             public string Text { get; set; }
@@ -436,12 +441,12 @@ namespace Bender.Test
             Assert.AreEqual(3, f.D.Id);
             Assert.AreEqual(4, f.D2.Id);
 
-            var dict2 = m.Map<Dictionary<string, object>>(f, typeof(F));
+            var dict2 = m.Map<Dictionary<string, object>>(new F2 { F = f }, typeof(F2));
 
-            Assert.AreEqual("Uno", dict2["Numero"]);
-            Assert.AreEqual("Due", dict2["Numero2"]);
-            Assert.AreEqual(f.D, (D) dict2["D"]);
-            Assert.AreEqual(f.D2.Id, dict2["D2.Id"]);
+            Assert.AreEqual("Uno", dict2["F.Numero"]);
+            Assert.AreEqual("Due", dict2["F.Numero2"]);
+            Assert.AreEqual(f.D, (D) dict2["F.D"]);
+            Assert.AreEqual(f.D2.Id, dict2["F.D2.Id"]);
 
             
             var dict3 = m.Map<Dictionary<string, string>>(f, typeof(F));

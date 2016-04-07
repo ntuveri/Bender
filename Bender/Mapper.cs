@@ -16,7 +16,7 @@ namespace Bender
         {
             Config = new MapperConfig();
         }
-        
+
         public T Map<S, T>(S source)
         {
             object t = Map(source, typeof(S), null, typeof(T));
@@ -28,7 +28,7 @@ namespace Bender
             object t = Map(source, sourceType, null, typeof(T));
             return t != null ? (T) t : default(T);
         }
-        
+
         public void Map<S, T>(S source, T target)
         {
             Map(source, typeof(S), target, typeof(T));
@@ -45,20 +45,17 @@ namespace Bender
         }
 
         public object Map(object source, Type sourceType, object target, Type targetType)
-        {   
-            var sourceMappingProvider = GetMappingItemProvider(sourceType, MappingProviderMode.Source);
-            var targetMappingProvider = GetMappingItemProvider(targetType, MappingProviderMode.Target);
-            
-            var sourceMappingItems = sourceMappingProvider.GetMappingItems(source, sourceType).ToList();
-            var targetMappingItems = targetMappingProvider.GetMappingItems(target, targetType).ToList();
+        {
+            var sourceMappingProvider = GetMappingItemProvider(sourceType);
+            var sourceMappingItems = sourceMappingProvider.GetMappingItems(source, sourceType, MappingProviderMode.Source).ToList();
+
+            var targetMappingProvider = GetMappingItemProvider(targetType);
+            var targetMappingItems = targetMappingProvider.GetMappingItems(target, targetType, MappingProviderMode.Target).ToList();
             Context = new MappingContext(sourceMappingProvider, targetMappingProvider, sourceMappingItems, targetMappingItems);
 
             InitMappingItems();
-            
-            PrintMappingItemProvider(sourceMappingProvider);
-            PrintMappingItems(FindRootMappingItems(Context.SourceMappingItems));
-            PrintMappingItemProvider(targetMappingProvider);
-            PrintMappingItems(FindRootMappingItems(Context.TargetMappingItems));
+
+            PrintMappingItems();
 
             var rootItems = FindRootMappingItems(Context.TargetMappingItems);
             if(rootItems != null && rootItems.Count() > 1)
@@ -66,6 +63,15 @@ namespace Bender
                 return rootItems.Select(ri => ri.Value);
             }
             return rootItems.Select(ri => ri.Value).SingleOrDefault();
+        }
+
+        private void PrintMappingItems()
+        {
+            Debug.Write(Environment.NewLine);
+            PrintMappingItemProvider(Context.SourceMappingProvider, MappingProviderMode.Source);
+            PrintMappingItems(FindRootMappingItems(Context.SourceMappingItems));
+            PrintMappingItemProvider(Context.TargetMappingProvider, MappingProviderMode.Target);
+            PrintMappingItems(FindRootMappingItems(Context.TargetMappingItems));
         }
 
         private IList<MappingItem> FindRootMappingItems(IEnumerable<MappingItem> items)
@@ -79,17 +85,17 @@ namespace Bender
             InitMappingItems(rootTargetMappingItems);
         }
 
-        
-        public static void PrintMappingItemProvider(IMappingItemProvider provider)
+
+        public static void PrintMappingItemProvider(IMappingItemProvider provider, MappingProviderMode mode)
         {
-            Debug.WriteLine(string.Format("Provider type: {0}, Provider mode: {1}", 
-                    provider.GetType().Name, provider.MappingProviderMode));    
+            Debug.WriteLine(string.Format("Provider type: {0}, Provider mode: {1}", provider.GetType().Name, mode));
         }
 
         public static void PrintMappingItems(MappingItem item)
         {
-            Debug.WriteLine(string.Format("Key: {0}, Item type: {1}, Value: {2}, Source type: {3}", 
-                    item.Key ?? "null", item.GetType().Name, (item.Value ?? (object) "null").ToString(), (item.Source ?? (object) "null").ToString()));    
+            Debug.WriteLine(string.Format("Key: {0}, Item type: {1}, Value: {2}, Type: {3}, Source: {4}",
+                    item.Key ?? "null", item.GetType().Name, 
+                    item.Value ?? "null", (object) item.Type ?? "null", item.Source ?? "null"));
         }
 
         public static void PrintMappingItems(IEnumerable<MappingItem> items)
@@ -97,15 +103,15 @@ namespace Bender
             foreach (var i in items)
             {
                 PrintMappingItems(i);
-                Debug.IndentLevel++;   
+                Debug.Indent();
                 PrintMappingItems(i.Children);
-                Debug.IndentLevel--;
+                Debug.Unindent();
             }
         }
 
         private void InitMappingItems(IEnumerable<MappingItem> targetItems)
-        {   
-            foreach(var targetItem in targetItems)
+        {
+            foreach (var targetItem in targetItems)
             {
                 InitMappingItem(targetItem);
             }
@@ -116,14 +122,14 @@ namespace Bender
             if(targetValue != null && targetItem.Type.IsAssignableFrom(targetValue.GetType()))
             {
                 targetItem.Value = targetValue;
-            }   
+            }
         }
 
         private void InitMappingItem(MappingItem targetItem)
         {
             var sourceItem = FindMappingItem(Context.SourceMappingItems, targetItem);
             object targetValue = null;
-            if(sourceItem != null) 
+            if(sourceItem != null)
             {
                 targetValue = sourceItem.Value;
                 var typeConverter = Config.FindTypeConverter(sourceItem.Type, targetItem.Type);
@@ -140,7 +146,7 @@ namespace Bender
                             targetValue, sourceItem.Type, targetItem.Type, sourceItem.Key, targetItem.Key, typeConverter.GetType().Name));
                         Debug.WriteLine(ex.ToString());
                         Context.MappingErrors.Add(new MappingError(sourceItem, targetItem));
-                    } 
+                    }
                 }
                 TryAssignMappingItemValue(targetItem, targetValue);
             }
@@ -148,15 +154,15 @@ namespace Bender
             Context.CurrentSourceMappingItem = sourceItem;
             Context.CurrentTargetValue = targetValue;
 
-            if (targetItem is ValueMappingItem)
+            if(targetItem is ValueMappingItem)
             {
                 InitValueMappingItem((ValueMappingItem) targetItem);
             }
-            if (targetItem is EnumerableMappingItem)
+            if(targetItem is EnumerableMappingItem)
             {
                 InitEnumerableMappingItem((EnumerableMappingItem) targetItem);
             }
-            if (targetItem is ContainerMappingItem)
+            if(targetItem is ContainerMappingItem)
             {
                 InitContainerMappingItem((ContainerMappingItem) targetItem);
             }
@@ -174,8 +180,8 @@ namespace Bender
         {
             var sourceItem = Context.CurrentSourceMappingItem;
             var sourceDescendantItems = FindDescendantMappingItems(Context.SourceMappingItems, item);
-            if(sourceItem == null && sourceDescendantItems.Count == 0) { return; } 
-            
+            if(sourceItem == null && sourceDescendantItems.Count == 0) { return; }
+
             item.Provider.InitMappingItem(Context, item);
         }
 
@@ -194,22 +200,42 @@ namespace Bender
             EnumerableMappingItem enumTargetItem = targetItem as EnumerableMappingItem;
             if(enumSourceItem != null && enumTargetItem != null)
             {
-                return enumTargetItem.ElementType.IsAssignableFrom(enumSourceItem.ElementType) || 
-                    Config.FindTypeConverter(enumSourceItem.ElementType, enumTargetItem.ElementType) != null;
+                return enumTargetItem.ChildrenType == enumSourceItem.ChildrenType;
             }
-
-            return targetItem.Type.IsAssignableFrom(sourceItem.Type) || 
-                    Config.FindTypeConverter(sourceItem.Type, targetItem.Type) != null;
+            
+            return targetItem.GetType() == sourceItem.GetType();
         }
 
         public MappingItem FindMappingItem(IEnumerable<MappingItem> items, MappingItem targetItem)
         {
-            return items.Where(i => 
-                MatchMappingItemKey(i.Key, targetItem.Key)).
-                OrderByDescending(i => i.GetType() == targetItem.GetType()).
-                ThenByDescending(i => MatchMappingItemType(i, targetItem)).
-                ThenByDescending(i => i.Key == targetItem.Key).
-                FirstOrDefault();
+            items = items.Where(i => MatchMappingItemKey(i.Key, targetItem.Key));
+
+            var matchingItemSameMappingType = FindSingleMappingItemOrThrow(
+                items.Where(i => MatchMappingItemType(i, targetItem)), targetItem);
+            if(matchingItemSameMappingType != null) return matchingItemSameMappingType;
+            
+            var matchingItem = FindSingleMappingItemOrThrow(items, targetItem);
+            return matchingItem;
+        }
+
+        private MappingItem FindSingleMappingItemOrThrow(IEnumerable<MappingItem> items, MappingItem targetItem)
+        {
+            if(items.Count() > 1)
+            {
+                var matchingItemsMessage = "";
+                int count = 1;
+                foreach (var il in items)
+                {
+                    matchingItemsMessage += string.Format("\n\tItem {0}, key {1}, type {2}", count++, il.Key, il.Type);
+                }
+
+                throw new InvalidOperationException(
+                    string.Format("Too much mapping items match the item having key {0} and type {1}. ",
+                        targetItem.Key, targetItem.Type) +
+                    "Matching mapping items are:" + matchingItemsMessage);
+            }
+
+            return items.SingleOrDefault();
         }
 
         public IList<MappingItem> FindChildMappingItems(IEnumerable<MappingItem> items, MappingItem targetItem)
@@ -223,19 +249,19 @@ namespace Bender
             return FindChildMappingItems(items, targetItem).Concat(
                 targetItem.Children.SelectMany(ti => FindChildMappingItems(items, ti))).ToList();
         }
-       
+
         private bool MatchMappingItemKey(string sourceKey, string targetKey)
         {
             if(sourceKey == targetKey) { return true; }
 
             string filteredSourceKey = Config.DefaultKeyFilter.Filter(sourceKey);
             string filteredTargetKey = Config.DefaultKeyFilter.Filter(targetKey);
-            
+
             bool match = false;
             if(filteredSourceKey != sourceKey)
             {
-                match = MatchMappingItemKey(filteredSourceKey, targetKey) || 
-                    MatchMappingItemKey(filteredSourceKey, filteredTargetKey); 
+                match = MatchMappingItemKey(filteredSourceKey, targetKey) ||
+                    MatchMappingItemKey(filteredSourceKey, filteredTargetKey);
             }
             else if(filteredTargetKey != targetKey)
             {
@@ -243,11 +269,10 @@ namespace Bender
             }
             return match;
         }
-        
-        private IMappingItemProvider GetMappingItemProvider(Type itemType, MappingProviderMode mode)
+
+        private IMappingItemProvider GetMappingItemProvider(Type itemType)
         {
             var mappingItemProvider = Config.FindMappingItemProvider(itemType);
-            mappingItemProvider.MappingProviderMode = mode;
             return mappingItemProvider;
         }
 

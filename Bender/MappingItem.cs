@@ -88,6 +88,19 @@ namespace Bender
                 return children;
             }
         }
+        
+        private Type childrenType;
+        public Type ChildrenType
+        {
+            get 
+            { 
+                return 
+                    Children.Select(c => c.GetType()).Distinct().SingleOrDefault() ?? 
+                    childrenType ?? 
+                    typeof(MappingItem); 
+            }
+            set { childrenType = value; }
+        }
 
         public Type Type { get; set; }
         public object Value { get; set; }
@@ -104,6 +117,10 @@ namespace Bender
 
     public class EnumerableMappingItem : MappingItem
     {
+        public EnumerableMappingItem()
+        {
+            
+        }
         public int ElementsCount 
         { 
             get { return Children.Count; } 

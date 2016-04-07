@@ -15,6 +15,8 @@ namespace Bender
         public MappingContext(IMappingItemProvider sourceMappingProvider, IMappingItemProvider targetMappingProvider, 
                 IList<MappingItem> sourceMappingItems, IList<MappingItem> targetMappingItems)
         {
+            SourceMappingProvider = sourceMappingProvider;
+            TargetMappingProvider = targetMappingProvider;
             SourceMappingItems = sourceMappingItems;
             TargetMappingItems = targetMappingItems;
             MappingErrors = new List<MappingError>();

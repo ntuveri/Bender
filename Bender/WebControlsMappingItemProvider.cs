@@ -22,7 +22,7 @@ namespace Bender
 
         public interface IWebControlAdapter 
         {
-            IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider);
+            IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider, MappingProviderMode mode);
         }
 
         public class ValueWebControlAdapter : IWebControlAdapter
@@ -32,7 +32,7 @@ namespace Bender
             public Func<Control, object> Getter { get; set; }
             public Action<Control, object> Setter { get; set; }
 
-            public virtual IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider)
+            public virtual IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider, MappingProviderMode mode)
             {
                 if(!(control is CheckBox && parentMappingItem.Source is CheckBoxList))
                 {
@@ -54,7 +54,7 @@ namespace Bender
             public Func<Control, object> Getter { get; set; }
             public Action<Control, object, MappingContext> Setter { get; set; }
 
-            public virtual IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider)
+            public virtual IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider, MappingProviderMode mode)
             {
                  yield return new EnumerableMappingItem() {
                     Parent = parentMappingItem,
@@ -71,7 +71,7 @@ namespace Bender
         public class ContainerWebControlAdapter : IWebControlAdapter
         {
             public Type ControlType { get; set; }
-            public virtual IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider)
+            public virtual IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider, MappingProviderMode mode)
             {
                 yield return new ContainerMappingItem() {
                         Parent = parentMappingItem,
@@ -118,13 +118,14 @@ namespace Bender
 
             
             private IEnumerable<MappingItem> InternalGetMappingItems(Control control, 
-                    MappingItem parentMappingItem, IMappingItemProvider provider, bool isSelected, bool isMultiSelect)
+                    MappingItem parentMappingItem, IMappingItemProvider provider, MappingProviderMode mode, 
+                    bool isSelected, bool isMultiSelect)
             {
                 MappingItem enumItem = null; 
                 ListControl lc = (ListControl) control;
                 var listItems = lc.Items.Cast<ListItem>().Where(li => !isSelected || (isSelected && li.Selected) ||
-                    provider.MappingProviderMode == Bender.MappingProviderMode.Target);
-
+                    mode == MappingProviderMode.Target);
+                
                 if(!isSelected || isMultiSelect)
                 {
                     enumItem = new EnumerableMappingItem() {
@@ -132,6 +133,7 @@ namespace Bender
                         Value = !isSelected ? Getter(control) : new object[listItems.Count()],
                         Type = typeof(IEnumerable),
                         ElementType = isSelected ? typeof(string) : typeof(object),
+                        ChildrenType = isSelected ? typeof(ValueMappingItem) : typeof(ContainerMappingItem),
                         Provider = provider,
                         Name = control.ID + (isSelected ? "Selected" : null),
                         Source = !isSelected ? control : null,
@@ -180,13 +182,13 @@ namespace Bender
                 }
             }
 
-            public override IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider)
+            public override IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider, MappingProviderMode mode)
             {
                 ListBox listBox = control as ListBox;
                 bool isMultiSelect = (listBox != null && listBox.SelectionMode == ListSelectionMode.Multiple) || control is CheckBoxList;
 
-                return InternalGetMappingItems(control, parentMappingItem, provider, false, isMultiSelect).Concat(
-                    InternalGetMappingItems(control, parentMappingItem, provider, true, isMultiSelect));
+                return InternalGetMappingItems(control, parentMappingItem, provider, mode, false, isMultiSelect).Concat(
+                    InternalGetMappingItems(control, parentMappingItem, provider, mode, true, isMultiSelect));
             }
         }
 
@@ -198,12 +200,12 @@ namespace Bender
                 ControlType = typeof(GridViewRow);
             }
 
-            public override IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider)
+            public override IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider, MappingProviderMode mode)
             {
                 GridViewRow gvr = (GridViewRow) control;
                 if(gvr.RowType == DataControlRowType.DataRow) 
                 {
-                    return base.GetMappingItems(control, parentMappingItem, provider);
+                    return base.GetMappingItems(control, parentMappingItem, provider, mode);
                 }
                 return Enumerable.Empty<MappingItem>();
             }
@@ -217,12 +219,12 @@ namespace Bender
                 ControlType = typeof(RepeaterItem);
             }
 
-            public override IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider)
+            public override IEnumerable<MappingItem> GetMappingItems(Control control, MappingItem parentMappingItem, IMappingItemProvider provider, MappingProviderMode mode)
             {
                 RepeaterItem ri = (RepeaterItem) control;
                 if(ri.ItemType == ListItemType.Item || ri.ItemType == ListItemType.AlternatingItem) 
                 {
-                    return base.GetMappingItems(control, parentMappingItem, provider);
+                    return base.GetMappingItems(control, parentMappingItem, provider, mode);
                 }
                 return Enumerable.Empty<MappingItem>();
             }
@@ -317,14 +319,14 @@ namespace Bender
             new GridViewRowWebControlAdapter()
         };
 
-        public IEnumerable<MappingItem> GetMappingItems(object root, Type rootType)
+        public IEnumerable<MappingItem> GetMappingItems(object root, Type rootType, MappingProviderMode mode)
         {
             if(!typeof(Control).IsAssignableFrom(rootType))
             {
                 return Enumerable.Empty<MappingItem>();
             }
             
-            return GetMappingItems(root, rootType, null);
+            return GetMappingItems(root, rootType, null, mode);
         }
 
         private IWebControlAdapter GetWebControl(Control control, Type controlType) 
@@ -334,7 +336,7 @@ namespace Bender
                 (IWebControlAdapter) ContainerWebControls.SingleOrDefault(vwc => vwc.ControlType.IsAssignableFrom(controlType)); 
         }
 
-        public IEnumerable<MappingItem> GetMappingItems(object item, Type itemType, MappingItem parentMappingItem)
+        public IEnumerable<MappingItem> GetMappingItems(object item, Type itemType, MappingItem parentMappingItem, MappingProviderMode mode)
         {   
             Control control = (Control) item;
             Type controlType = itemType;
@@ -343,7 +345,7 @@ namespace Bender
             var webControl = GetWebControl(control, controlType);
             if(webControl != null)
             {
-                var mappingItems = webControl.GetMappingItems(control, parentMappingItem, this);
+                var mappingItems = webControl.GetMappingItems(control, parentMappingItem, this, mode);
                 foreach(var mi in mappingItems)
                 {
                     // parent is the first mappging item
@@ -353,7 +355,7 @@ namespace Bender
             }
             foreach (Control sc in control.Controls)
             {
-                var subMappingItems = GetMappingItems(sc, sc.GetType(), tmpParentMappingItem ?? parentMappingItem);
+                var subMappingItems = GetMappingItems(sc, sc.GetType(), tmpParentMappingItem ?? parentMappingItem, mode);
                 foreach(var smi in subMappingItems)
                 {
                     yield return smi;
@@ -399,7 +401,7 @@ namespace Bender
                 
                 if(initialValue == null)
                 {   
-                    var subMappingItems = GetMappingItems(control, control.GetType()).ToList();
+                    var subMappingItems = GetMappingItems(control, control.GetType(), MappingProviderMode.Target).ToList();
                     foreach (var smi in subMappingItems)
                     {
                         if(smi.Parent == null) 

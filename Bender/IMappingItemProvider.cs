@@ -8,10 +8,9 @@ namespace Bender
     public interface IMappingItemProvider
     {
         Type MappedRootType { get; }
-        MappingProviderMode MappingProviderMode { get; set; }
         
-        IEnumerable<MappingItem> GetMappingItems(object item, Type itemType);
-        IEnumerable<MappingItem> GetMappingItems(object item, Type itemType, MappingItem parentMappingItem);
+        IEnumerable<MappingItem> GetMappingItems(object item, Type itemType, MappingProviderMode mode);
+        IEnumerable<MappingItem> GetMappingItems(object item, Type itemType, MappingItem parentMappingItem, MappingProviderMode mode);
         
         void InitMappingItem(MappingContext context, ValueMappingItem valueItem);
         void InitMappingItem(MappingContext context, ContainerMappingItem containerItem);

@@ -109,27 +109,31 @@ namespace Bender
 
         private void InitDictionaryMappingItem(MappingContext context, ContainerMappingItem dictionaryItem, IEnumerable<MappingItem> sourceMappingItemChildren, IDictionary dict)
         {
-            var valueType = GetDictionaryValueType(dictionaryItem.Type);
+            var dictValueType = GetDictionaryValueType(dictionaryItem.Type);
             foreach (var mic in sourceMappingItemChildren)
             {
-                var key = mic.Key;
-                var itemType = valueType;
+                var itemType = dictValueType;
                 // use the source type if known and is assignable to the dictionary value type
                 if(mic.Type != null || mic.Value != null)
                 {
                     var miType = mic.Type ?? mic.Value.GetType();
-                    if(valueType.IsAssignableFrom(miType))
+                    if(dictValueType.IsAssignableFrom(miType))
                     {
                         itemType = miType;
                     }
                 }
-                dict[key] = itemType.IsValueType ? Activator.CreateInstance(itemType) : null;
+
+                dict[mic.Key] = itemType.IsValueType ? Activator.CreateInstance(itemType) : null;
+                
                 InitDictionaryMappingItem(context, dictionaryItem, mic.Children, dict);
 
-                var subMappingItems = GetMappingItems(dict[key], itemType, dictionaryItem);
+                var subMappingItems = GetMappingItems(dict[mic.Key], itemType, dictionaryItem, MappingProviderMode.Target);
                 foreach (var smi in subMappingItems)
-                {  
-                    if(smi.Parent == dictionaryItem) { smi.Name = (string) key; }
+                {
+                    if(smi.Parent == dictionaryItem) 
+                    { 
+                        smi.Name = dictionaryItem.Parent == null ?  mic.Key : mic.Name; 
+                    }
                     context.TargetMappingItems.Add(smi);
                 }
             }
@@ -168,7 +172,7 @@ namespace Bender
                 
                 foreach (var evItem in (IEnumerable) enumValue)
                 {
-                    var targetItems = GetMappingItems(evItem, enumItem.ElementType, enumItem);
+                    var targetItems = GetMappingItems(evItem, enumItem.ElementType, enumItem, MappingProviderMode.Target);
                     foreach(var ti in targetItems) 
                     {
                         context.TargetMappingItems.Add(ti); 
@@ -182,7 +186,7 @@ namespace Bender
             }
         }
 
-        public IEnumerable<MappingItem> GetMappingItems(object item, Type itemType, MappingItem parentMappingItem)
+        public IEnumerable<MappingItem> GetMappingItems(object item, Type itemType, MappingItem parentMappingItem, MappingProviderMode mode)
         {
             if (IsValueType(itemType))
             {
@@ -196,11 +200,14 @@ namespace Bender
             }
             else if(IsEnumerableType(itemType) && !IsDictionaryType(itemType))
             {   
+                var elementType = GetEnumerableElementType(itemType);
+
                 var enumMappingItem = new EnumerableMappingItem() {
                     Parent = parentMappingItem,
                     Value = item,
                     Type = itemType, 
-                    ElementType = GetEnumerableElementType(itemType),
+                    ElementType = elementType,
+                    ChildrenType = IsValueType(elementType) ? typeof(ValueMappingItem) : typeof(ContainerMappingItem),
                     Provider = this
                 };
                 yield return enumMappingItem;
@@ -209,7 +216,7 @@ namespace Bender
                 {
                     foreach(var element in (IEnumerable) item)
                     {
-                        var subMappingItems = GetMappingItems(element, enumMappingItem.ElementType, enumMappingItem);
+                        var subMappingItems = GetMappingItems(element, enumMappingItem.ElementType, enumMappingItem, mode);
                         foreach (var smi in subMappingItems)
                         {
                             yield return smi;
@@ -234,7 +241,7 @@ namespace Bender
                     {
                         var value = dictionary[key];
                         var valueType = value != null ? value.GetType() : GetDictionaryValueType(itemType);
-                        var subMappingItems = GetMappingItems(value, valueType, containerMappingItem);
+                        var subMappingItems = GetMappingItems(value, valueType, containerMappingItem, mode);
                     
                         foreach (var smi in subMappingItems)
                         {  
@@ -260,7 +267,7 @@ namespace Bender
                 {
                     var prop = props[i];
                     var propValue = item == null ? null : prop.GetValue(item, null); 
-                    var subMappingItems = GetMappingItems(propValue, prop.PropertyType, containerMappingItem);
+                    var subMappingItems = GetMappingItems(propValue, prop.PropertyType, containerMappingItem, mode);
                     
                     foreach (var smi in subMappingItems)
                     {  
@@ -272,9 +279,9 @@ namespace Bender
         }
 
 
-        public IEnumerable<MappingItem> GetMappingItems(object root, Type rootType)
+        public IEnumerable<MappingItem> GetMappingItems(object root, Type rootType, MappingProviderMode mode)
         {
-            return GetMappingItems(root, rootType, null);
+            return GetMappingItems(root, rootType, null, mode);
         }
 
         private Action<object> GetSetter(MappingItem mappingItem)
