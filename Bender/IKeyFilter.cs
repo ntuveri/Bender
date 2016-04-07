@@ -22,7 +22,7 @@ namespace Bender
         { 
             if(key == null) return null;
 
-            int index = key.IndexOf(".");
+            int index = key.IndexOf(".", StringComparison.Ordinal);
             if(index >= 0) 
             {
                 return key.Remove(index, 1);
@@ -36,8 +36,8 @@ namespace Bender
         private string[] Prefixes { get; set; }
         private string[] Postfixes { get; set; }
 
-        private const string BracketsRegex = @"^\w+(\[\d+\])$"; 
-
+        private static readonly Regex BracketsRegex = new Regex(@"^\w+(\[\d+\])$", RegexOptions.Compiled | RegexOptions.RightToLeft); 
+        
         public PrefixPostfixFilter(string[] prefixes, string[] postfixes)
         {
             Prefixes = prefixes ?? new string[] {};
@@ -53,7 +53,7 @@ namespace Bender
             {
                 foreach (string prefix in Prefixes)
                 {
-                    if(parts[i].StartsWith(prefix))
+                    if(parts[i].StartsWith(prefix, StringComparison.Ordinal))
                     {
                         parts[i] = parts[i].Remove(0, prefix.Length);
                         break;
@@ -62,13 +62,19 @@ namespace Bender
                 
                 foreach (string postfix in Postfixes)
                 {
-                    Match match = Regex.Match(parts[i], BracketsRegex);
+                    if(parts[i].EndsWith(postfix, StringComparison.Ordinal))
+                    {   
+                        parts[i] = parts[i].Remove(parts[i].Length - postfix.Length, postfix.Length);
+                        break;
+                    }
+
+                    Match match = BracketsRegex.Match(parts[i]);
                     string brackets = "";
                     if(match.Success)
                     {
                         brackets = match.Groups[1].Value;
                     }
-                    if(parts[i].EndsWith(postfix + brackets))
+                    if(parts[i].EndsWith(postfix + brackets, StringComparison.Ordinal))
                     {   
                         parts[i] = parts[i].Remove(parts[i].Length - postfix.Length - brackets.Length, postfix.Length);
                         break;
